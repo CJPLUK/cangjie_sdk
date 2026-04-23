@@ -1,8 +1,8 @@
-# Custom deferred effect handler SDK
+# Cangjie SDK build framework
 
-This repository is used to pin down versions of relevant repos to build a fork of the Cangjie SDK with deferred effect handlers, including the versions of some third party dependencies to keep the build system reproducible (not time-dependent).
+This repository is used to pin down versions of relevant repos to build a fork of the Cangjie SDK (with deferred effect handlers in certain branches), including the versions of some third party dependencies to keep the build system reproducible (and not time-dependent).
 
-A byproduct is to build the custom SDK to host on the Cangjie UK website. The goal is to set up containerized builds for all the supported platforms. Maybe later this could also include CI testing pinned down to specific revisions of cangjie_test and cangjie_test_framework.
+A biproduct is to build the custom SDK to host on the Cangjie UK website. The goal is to set up containerised builds for all the supported platforms. Maybe later this could also include CI testing pinned down to specific revisions of cangjie_test and cangjie_test_framework.
 
 ## Cloning
 This repo makes use of git submodules so make sure to `git clone` with the `--recurse-submodules`... or if you forgot to do that the first time, you can run `git submodule update --init`.
@@ -12,9 +12,9 @@ This repo makes use of git submodules so make sure to `git clone` with the `--re
 With the environment set up as dictated by cangjie_build, you can build the SDK with:
 ```shell
 // linux:
-sh build_scripts/linux.sh // observed to work on linux/x64
+bash build_scripts/linux/all.sh // observed to work on linux/x64
 // mac:
-sh build_scripts/mac.sh // observed to work on macos/aarch64
+bash build_scripts/mac/all.sh // observed to work on macos/aarch64
 ```
 
 ## Build (containerized)
@@ -23,12 +23,21 @@ There are services defined in `compose.yaml` which will build the SDK for differ
 
 ### Linux/x86_64
 ```shell
-FIXUID=`id -u` FIXGUID=`id -g` docker-compose run --rm build-sdk-linux64
+FIXUID=`id -u` docker-compose run --rm build-sdk-linux64
 ```
 
 ### Linux/aarch64
 ```shell
-FIXUID=`id -u` FIXGUID=`id -g` docker-compose run --rm build-sdk-linuxarm
+FIXUID=`id -u` docker-compose run --rm build-sdk-linuxarm
+```
+
+## Containerized unrestricted vibing (opencode)
+
+Assumes $HOME is /home/$USER (i.e. set up for linux not mac).
+This will use your auth file from your main opencode install (~/.local/share/opencode/auth.json).
+
+```shell
+FIXUID=`id -u` docker compose run opencode-linux64
 ```
 
 ### Others
