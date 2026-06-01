@@ -7,6 +7,10 @@ set -o xtrace
 # cjpm
 cd $WORKSPACE/cangjie_tools/cjpm/build;
 [ "$SKIP_CLEAN" -eq 1 ] || python3 build.py clean;
-# this path only makes sense when bundleSDKwithLinks.sh is used
-python3 build.py build -t "$CJPM_TARGET" --set-rpath @loader_path/../../../software/cangjie/runtime/lib/darwin_${ARCH}_cjnative;
+if [ "$BUNDLE_WITH_LINKS" -eq 1 ]; then
+    CJPM_RPATH="@loader_path/../../../software/cangjie/runtime/lib/darwin_${ARCH}_cjnative"
+else
+    CJPM_RPATH="@loader_path/../../runtime/lib/darwin_${ARCH}_cjnative"
+fi
+python3 build.py build -t "$CJPM_TARGET" --set-rpath "$CJPM_RPATH";
 python3 build.py install;
