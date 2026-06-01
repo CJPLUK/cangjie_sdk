@@ -64,7 +64,7 @@ if test "0$cjbuildenv" -ne "01"; then
   export HYPERLANG_TARGET
   export LSP_TARGET
   
-  : "${CANGJIE_VERSION:=unofficial}"
+  : "${CANGJIE_VERSION:=1.5.0-dev}"
   : "${SDK_NAME:=stdx}"
   export CANGJIE_VERSION
   export SDK_NAME
