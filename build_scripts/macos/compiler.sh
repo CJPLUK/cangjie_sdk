@@ -10,6 +10,9 @@ cd $WORKSPACE/cangjie_compiler;
 [ -d third_party/flatbuffers ] || git clone ../third_party/third_party_flatbuffers third_party/flatbuffers
 python3 build.py build -t "$COMPILER_TARGET" --no-tests;
 python3 build.py install;
+if [ "$COMPILER_TARGET" = "debug" ] || [ "$COMPILER_TARGET" = "relwithdebinfo" ]; then
+    dsymutil output/bin/cjc -o output/bin/cjc.dSYM
+fi
 
 # Quick test
 . output/envsetup.sh
