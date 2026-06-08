@@ -1,0 +1,8 @@
+alias c='git commit'
+alias a='git add'
+alias ph='git push'
+alias pl='git pull'
+alias s='git status'
+alias d='git diff'
+alias b='git branch'
+alias co='git checkout'

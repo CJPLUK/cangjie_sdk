@@ -1,0 +1,31 @@
+{
+  "name": "Cangjie SDK",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  // Start both the workspace and db containers
+  "workspaceFolder": "/workspaces/cangjie_sdk",
+  "mounts": [
+    "source=house-hunter-codex,target=/home/vscode/.codex,type=volume",
+    "source=house-hunter-cursor,target=/home/vscode/.cursor,type=volume"
+  ],
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "openai.chatgpt",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "cmake.configureOnOpen": false
+      }
+    }
+  },
+  "containerEnv": {
+    "CANGJIE_VERSION": "1.5.0-dev",
+    "SDK_NAME": "stdx"
+  },
+  "remoteUser": "vscode"
+}
