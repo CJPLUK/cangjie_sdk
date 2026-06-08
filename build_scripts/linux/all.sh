@@ -14,7 +14,13 @@ cd $(dirname $0)
 [ "$SKIP_HYPERLANG" -eq 1 ] || bash ./hyperlang.sh
 [ "$SKIP_LSP" -eq 1 ] || bash ./lsp.sh
 
-[ "$SKIP_BUNDLE" -eq 1 ] || bash ./bundleSDK.sh
+if [ "$SKIP_BUNDLE" -ne 1 ]; then
+    if [ "$BUNDLE_WITH_LINKS" -eq 1 ]; then
+        bash ./bundleSDKwithLinks.sh
+    else
+        bash ./bundleSDK.sh
+    fi
+fi
 
 
 

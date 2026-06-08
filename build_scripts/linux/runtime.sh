@@ -9,8 +9,8 @@ set -o xtrace
 cd $WORKSPACE/cangjie_runtime/runtime;
 [ "$SKIP_CLEAN" -eq 1 ] || python3 build.py clean;
 bash $WORKSPACE/build_scripts/linux/clone_thirdparty.sh
-python3 build.py build -t $TARGET -v ${CANGJIE_VERSION};
+python3 build.py build -t "$RUNTIME_TARGET" -v ${CANGJIE_VERSION};
 python3 build.py install;
-rsync -a $WORKSPACE/cangjie_runtime/runtime/output/common/linux_${TARGET}_${ARCH}/lib/ $WORKSPACE/cangjie_compiler/output/lib/;
-rsync -a $WORKSPACE/cangjie_runtime/runtime/output/common/linux_${TARGET}_${ARCH}/runtime/ $WORKSPACE/cangjie_compiler/output/runtime/;
+rsync -a $WORKSPACE/cangjie_runtime/runtime/output/common/linux_${RUNTIME_TARGET}_${ARCH}/lib/ $WORKSPACE/cangjie_compiler/output/lib/;
+rsync -a $WORKSPACE/cangjie_runtime/runtime/output/common/linux_${RUNTIME_TARGET}_${ARCH}/runtime/ $WORKSPACE/cangjie_compiler/output/runtime/;
 
