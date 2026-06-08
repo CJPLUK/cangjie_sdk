@@ -22,11 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && clang --version | grep -F "${LLVM_VERSION}" \
     && rm -rf /var/lib/apt/lists/*
 
-# Install cursor-agent
 USER vscode
 
 ENV CC=clang \
     CXX=clang++
 
+# Install cursor-agent
 RUN curl https://cursor.com/install -fsS | bash
 ENV PATH="/home/vscode/.local/bin:${PATH}"
