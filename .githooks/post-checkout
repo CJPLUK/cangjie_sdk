@@ -8,6 +8,8 @@ git submodule status \
 
 # Add relevant remotes to the submodules
 
+(
+unset $(git rev-parse --local-env-vars);
 git -C cangjie_compiler remote add cjpluk-ssh git@github.com:CJPLUK/cangjie_compiler.git &> /dev/null
 git -C cangjie_runtime remote add cjpluk-ssh git@github.com:CJPLUK/cangjie_runtime.git &> /dev/null
 git -C cangjie_stdx remote add cjpluk-ssh git@github.com:CJPLUK/cangjie_stdx.git &> /dev/null
@@ -17,6 +19,7 @@ git -C cangjie_compiler remote add gitcode https://gitcode.com/Cangjie/cangjie_c
 git -C cangjie_runtime remote add gitcode https://gitcode.com/Cangjie/cangjie_runtime.git &> /dev/null
 git -C cangjie_stdx remote add gitcode https://gitcode.com/Cangjie/cangjie_stdx.git &> /dev/null
 git -C cangjie_tools remote add gitcode https://gitcode.com/Cangjie/cangjie_tools.git &> /dev/null
+)
 
 
 if [ "-$3" = "-1" ]; then
