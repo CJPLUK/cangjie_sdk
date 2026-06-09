@@ -6,3 +6,18 @@ alias s='git status'
 alias d='git diff'
 alias b='git branch'
 alias co='git checkout'
+
+if ! declare -F __git_complete >/dev/null && [ -f /usr/share/bash-completion/completions/git ]; then
+    . /usr/share/bash-completion/completions/git
+fi
+
+if declare -F __git_complete >/dev/null; then
+    __git_complete c _git_commit
+    __git_complete a _git_add
+    __git_complete ph _git_push
+    __git_complete pl _git_pull
+    __git_complete s _git_status
+    __git_complete d _git_diff
+    __git_complete b _git_branch
+    __git_complete co _git_checkout
+fi

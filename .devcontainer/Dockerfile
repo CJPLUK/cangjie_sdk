@@ -6,6 +6,7 @@ ARG LLVM_VERSION=16.0.6
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    bash-completion \
     python3 \
     build-essential \
     cmake \
