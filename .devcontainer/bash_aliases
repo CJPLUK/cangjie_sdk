@@ -21,3 +21,7 @@ if declare -F __git_complete >/dev/null; then
     __git_complete b _git_branch
     __git_complete co _git_checkout
 fi
+
+alias build_compiler='pushd build/build && ninja build.ninja cjc && ninja build.ninja install ; popd'
+alias build_core='pushd build/build && ninja std-core cjc && ninja build.ninja install ; popd'
+alias run_extern_tests='python3 cangjie_test_framework/main.py --test_cfg=cangjie_test/testsuites/LLT/configs/cjnative/cjnative_test.cfg -pFAIL -j20 --test_list=cangjie_test/testsuites/LLT/extern_testlist cangjie_test/testsuites/LLT/'

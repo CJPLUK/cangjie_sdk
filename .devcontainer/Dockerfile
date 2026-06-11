@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     bash-completion \
     python3 \
+    python3-dev \
     build-essential \
     cmake \
     ninja-build \

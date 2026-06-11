@@ -7,7 +7,12 @@
   "workspaceFolder": "/workspaces/cangjie_sdk",
   "mounts": [
     "source=codex_volume,target=/home/vscode/.codex,type=volume",
-    "source=cursor_volume,target=/home/vscode/.cursor,type=volume"
+    "source=cursor_volume,target=/home/vscode/.cursor,type=volume",
+    "source=cursor_config_volume,target=/home/vscode/.config/Cursor,type=volume",
+    "source=vscode_volume,target=/home/vscode/.vscode-server,type=volume",
+    "source=/Users/claudio/cangjie_interop_architecture/examples/interop_javascript,target=/workspaces/interop_javascript,type=bind,consistency=cached",
+    "source=/Users/claudio/cangjie_interop_architecture/examples/interop_python,target=/workspaces/interop_python,type=bind,consistency=cached",
+    "source=/Users/claudio/cangjie_interop_architecture/examples/multi_language_interop,target=/workspaces/multi_language_interop,type=bind,consistency=cached"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {

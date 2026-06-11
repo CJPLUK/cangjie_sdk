@@ -3,6 +3,11 @@ set -euo pipefail
 
 sudo chown -R vscode:vscode /home/vscode/.codex
 sudo chown -R vscode:vscode /home/vscode/.cursor
+sudo chown -R vscode:vscode /home/vscode/.vscode-server
+sudo chown -R vscode:vscode /home/vscode/.config/Cursor
+
+# install codex cli globally, VSCode plugn is a piece of crap!
+curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh
 
 ARCH_name="$(uname -m)"
 ENV_FILE="${HOME}/.cangjie_sdk_env"
