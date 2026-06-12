@@ -8,8 +8,7 @@
   "mounts": [
     "source=codex_volume,target=/home/vscode/.codex,type=volume",
     "source=cursor_volume,target=/home/vscode/.cursor,type=volume",
-    "source=cursor_config_volume,target=/home/vscode/.config/Cursor,type=volume",
-    "source=vscode_volume,target=/home/vscode/.vscode-server,type=volume"
+    "source=cursor_config_volume,target=/home/vscode/.config/Cursor,type=volume"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {
