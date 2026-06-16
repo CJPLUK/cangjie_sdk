@@ -1,86 +1,30 @@
 services:
-  build-sdk-linux64:
+  build-sdk:
     build:
       context: .
       dockerfile: Dockerfile
-      target: base-x64
+      target: builder
       args:
         - UID=${FIXUID}
-        - GID=${FIXGID}
     working_dir: /workspace
     environment:
       CANGJIE_VERSION: ${CANGJIE_VERSION:-0.0.1-dev}
       SDK_NAME: ${SDK_NAME:-unofficial}
-      ARCH: x86_64
-      OPENSSL_ROOT_DIR: /opt/buildtools/openssl-3.0.9
-      CMAKE_PREFIX_PATH: /opt/buildtools/openssl-3.0.9
+      # OPENSSL_ROOT_DIR: /opt/buildtools/openssl-3.0.9
+      # CMAKE_PREFIX_PATH: /opt/buildtools/openssl-3.0.9
     volumes:
       - ./:/workspace
-    command: >-
-      bash build_scripts/linux/all.sh
-  build-sdk-linuxarm:
+    command: bash build_scripts/linux/all.sh
+  dev:
+    extends: build-sdk
+    command: bash -i
+  opencode:
+    extends: build-sdk
     build:
-      context: .
-      dockerfile: Dockerfile
-      target: base-aarch64
-      args:
-        - UID=${FIXUID}
-        - GID=${FIXGID}
-    working_dir: /workspace
-    environment:
-      CANGJIE_VERSION: ${CANGJIE_VERSION:-0.0.1-dev}
-      SDK_NAME: ${SDK_NAME:-unofficial}
-      ARCH: aarch64
-      OPENSSL_ROOT_DIR: /opt/buildtools/openssl-3.0.9
-      CMAKE_PREFIX_PATH: /opt/buildtools/openssl-3.0.9
+      target: opencode
     volumes:
-      - ./:/workspace
-    command: >-
-      bash build_scripts/linux/all.sh
-  opencode-linux64:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: opencode-x64
-      args:
-        - UID=${FIXUID}
-        - GID=${FIXGID}
-    working_dir: /workspace
-    environment:
-      CANGJIE_VERSION: ${CANGJIE_VERSION:-0.0.1-dev}
-      SDK_NAME: ${SDK_NAME:-unofficial}
-      ARCH: x86_64
-      OPENSSL_ROOT_DIR: /opt/buildtools/openssl-3.0.9
-      CMAKE_PREFIX_PATH: /opt/buildtools/openssl-3.0.9
-    volumes:
-      - ./:/workspace
       - type: bind
         source: /home/${USER}/.local/share/opencode/auth.json
         target: /home/dev/.local/share/opencode/auth.json
-    command: >-
-      /home/dev/.opencode/bin/opencode --agent containerized
-  opencode-linuxarm:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: opencode-aarch64
-      args:
-        - UID=${FIXUID}
-        - GID=${FIXGID}
-    working_dir: /home/dev/workspace
-    user: dev
-    tty: true
-    stdin_open: true
-    environment:
-      HOME: /home/dev
-      CANGJIE_VERSION: ${CANGJIE_VERSION:-0.0.1-dev}
-      SDK_NAME: ${SDK_NAME:-unofficial}
-      ARCH: x86_64
-      OPENSSL_ROOT_DIR: /opt/buildtools/openssl-3.0.9
-      CMAKE_PREFIX_PATH: /opt/buildtools/openssl-3.0.9
-    volumes:
-      - ./:/home/dev/workspace
-      - ${HOME}/.local/share/opencode/auth.json:/home/dev/.local/share/opencode/auth.json
-    command: >-
-      /home/dev/.opencode/bin/opencode --agent containerized
+    command: /home/dev/.opencode/bin/opencode --agent containerized
 
