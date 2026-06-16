@@ -17,6 +17,8 @@ services:
     command: bash build_scripts/linux/all.sh
   dev:
     extends: build-sdk
+    build:
+      target: devcontainer
     command: bash -i
   opencode:
     extends: build-sdk
@@ -27,4 +29,3 @@ services:
         source: /home/${USER}/.local/share/opencode/auth.json
         target: /home/dev/.local/share/opencode/auth.json
     command: /home/dev/.opencode/bin/opencode --agent containerized
-

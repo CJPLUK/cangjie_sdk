@@ -33,3 +33,32 @@ RUN mkdir -p /home/dev/.config/opencode /home/dev/.local/share/opencode
 RUN touch /home/dev/.local/share/opencode/auth.json
 RUN curl -fsSL https://opencode.ai/install | bash
 
+FROM builder AS devcontainer
+
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    apt-utils \
+    bash-completion \
+    gnupg2 \
+    htop \
+    iproute2 \
+    iputils-ping \
+    jq \
+    less \
+    lldb-16 \
+    locales \
+    lsb-release \
+    man-db \
+    nano \
+    procps \
+    software-properties-common \
+    unzip \
+    vim \
+    wget \
+    zip \
+    zsh \
+    && update-alternatives --install /usr/bin/lldb lldb /usr/bin/lldb-16 100 \
+    && rm -rf /var/lib/apt/lists/*
+
+USER dev
