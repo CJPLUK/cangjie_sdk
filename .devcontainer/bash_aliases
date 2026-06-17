@@ -24,4 +24,4 @@ fi
 
 alias build_compiler='pushd build/build && ninja build.ninja cjc && ninja build.ninja install ; popd'
 alias build_core='pushd build/build && ninja std-core cjc && ninja build.ninja install ; popd'
-alias run_extern_tests='python3 cangjie_test_framework/main.py --test_cfg=cangjie_test/testsuites/LLT/configs/cjnative/cjnative_test.cfg -pFAIL -j20 --test_list=cangjie_test/testsuites/LLT/extern_testlist cangjie_test/testsuites/LLT/'
+alias run_extern_tests='python3 /workspaces/cangjie_sdk/cangjie_test_framework/main.py --test_cfg=/workspaces/cangjie_sdk/cangjie_test/testsuites/LLT/configs/cjnative/cjnative_test.cfg -pFAIL -j20 --test_list=/workspaces/cangjie_sdk/cangjie_test/testsuites/LLT/extern_testlist /workspaces/cangjie_sdk/cangjie_test/testsuites/LLT/'
