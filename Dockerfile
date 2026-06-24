@@ -1,7 +1,7 @@
 FROM docker.io/library/ubuntu:24.04 AS builder
 
 ARG LLVM_VERSION=16.0.6
-ARG UID
+ARG UID=1001
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \

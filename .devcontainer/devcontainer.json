@@ -1,12 +1,11 @@
 {
   "name": "Cangjie SDK Dev",
-  "dockerComposeFile": [
-    "../compose.yaml"
-  ],
-  "service": "dev",
-  "workspaceFolder": "/workspace",
+  "context": "..",
+  "dockerFile": "../Dockerfile",
+  "build": {
+    "target": "devcontainer"
+  },
+  "workspaceFolder": "/workspaces/cangjie",
   "remoteUser": "dev",
-  "overrideCommand": false,
-  "shutdownAction": "stopCompose",
-  "updateRemoteUserUID": false,
+  "overrideCommand": true
 }
