@@ -8,7 +8,7 @@ cd $WORKSPACE/cangjie_compiler;
 [ "$SKIP_CLEAN" -eq 1 ] || python3 build.py clean;
 [ -d third_party/llvm-project ] || git clone ../third_party/llvm-project/ third_party/llvm-project
 [ -d third_party/flatbuffers ] || git clone ../third_party/third_party_flatbuffers third_party/flatbuffers
-python3 build.py build -t "$COMPILER_TARGET" --no-tests;
+python3 build.py build -t "$COMPILER_TARGET" --no-tests -v ${CANGJIE_VERSION};
 python3 build.py install;
 if [ "$COMPILER_TARGET" = "debug" ] || [ "$COMPILER_TARGET" = "relwithdebinfo" ]; then
     dsymutil output/bin/cjc -o output/bin/cjc.dSYM
