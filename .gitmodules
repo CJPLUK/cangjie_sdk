@@ -9,7 +9,7 @@
 	url = https://github.com/CJPLUK/cangjie_runtime.git
 [submodule "cangjie_tools"]
 	path = cangjie_tools
-	url = https://gitcode.com/Cangjie/cangjie_tools.git
+	url = https://github.com/CJPLUK/cangjie_tools.git
 [submodule "cangjie_test"]
 	path = cangjie_test
 	url = https://github.com/CJPLUK/cangjie_test.git
