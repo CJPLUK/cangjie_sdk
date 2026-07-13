@@ -44,11 +44,12 @@ if test "0$cjbuildenv" -ne "01"; then
   
   : "${CANGJIE_VERSION:=0.0.1-dev}"
   : "${SDK_NAME:=unofficial}"
+  export ARCH=$(uname -m)
   export CANGJIE_VERSION
   export SDK_NAME
   export WORKSPACE=$(realpath $(dirname $0)/../..)
+  export CMAKE_BUILD_PARALLEL_LEVEL=$((`nproc`>16 ? 16 : `nproc`))
   echo $WORKSPACE
 
   export cjbuildenv=1
-  export CMAKE_BUILD_PARALLEL_LEVEL=$((`nproc`>16 ? 16 : `nproc`))
 fi

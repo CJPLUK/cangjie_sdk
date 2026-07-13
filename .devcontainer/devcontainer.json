@@ -1,0 +1,11 @@
+{
+  "name": "Cangjie SDK Dev",
+  "context": "..",
+  "dockerFile": "../Dockerfile",
+  "build": {
+    "target": "devcontainer"
+  },
+  "workspaceFolder": "/workspaces/cangjie",
+  "remoteUser": "dev",
+  "overrideCommand": true
+}
