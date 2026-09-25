@@ -1,4 +1,4 @@
-# `Extern<T>` in the compiler
+# 1. `Extern<T>` in the compiler
 
 `std.core` declares a value of a foreign runtime `T` and the runtime interface:
 
@@ -30,9 +30,9 @@ The compiler introduces two rewrites:
 
 Sema only accepts these expressions and gives them their types. The rewrites happen in one pass after Sema, driven by the final types.
 
-# Type checking
+# 2. Type checking
 
-## Helpers
+## 2.1 Helpers
 
 - `Ty::IsCoreExternType()` in [Types.h](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/include/cangjie/AST/Types.h) / [Types.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/AST/Types.cpp): an enum of the core package named `Extern` with one type argument. It uses the new constants `STD_LIB_EXTERN` and `STD_LIB_FOREIGN_RUNTIME` from [ConstantsUtils.h](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/include/cangjie/Utils/ConstantsUtils.h).
 - `NeedExternConversion(from, to)` in [TypeCheckerImpl.h](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckerImpl.h) / [TypeChecker.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeChecker.cpp), shared by Sema and the desugaring:
@@ -42,19 +42,32 @@ Sema only accepts these expressions and gives them their types. The rewrites hap
   ```
 - Dynamic-node predicates in [TypeCheckUtil.h](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckUtil.h) / [TypeCheckUtil.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckUtil.cpp), shared by Sema and the desugaring:
   ```cpp
-  // e has type Extern<T> and is a value, not a reference to the type (Extern<T>.ExternPayload(v) stays static)
+  // e is a value of type Extern<T>, not the type name Extern<T> itself
+  // (so Extern<T>.ExternPayload(v) is a normal enum constructor call, not a dynamic access)
   bool IsExternValue(const Expr& e);
-  bool IsDynamicExternMemberAccess(const MemberAccess& ma); // e.f, not a left value
-  bool IsDynamicExternSubscript(const SubscriptExpr& se);   // e[i1, ..., in], not a left value
-  bool IsDynamicExternUpdate(const AssignExpr& ae);         // e.f = v, e[i1, ..., in] = v, and their op= forms
-  bool IsDynamicExternCall(const CallExpr& ce);             // e(args), including e.f(args)
+
+  // ma is a read of any member f of an Extern<T> value e: e.f
+  // (a left value e.f in e.f = v is handled by IsDynamicExternUpdate)
+  bool IsDynamicExternMemberAccess(const MemberAccess& ma);
+
+  // se is a read of indices of any type on an Extern<T> value e: e[i1, ..., in], meaning e[i1]...[in]
+  // (a left value e[i] in e[i] = v is handled by IsDynamicExternUpdate)
+  bool IsDynamicExternSubscript(const SubscriptExpr& se);
+
+  // ae assigns to a member or to indices of an Extern<T> value e:
+  // e.f = v, e[i1, ..., in] = v, e.f op= v, e[i1, ..., in] op= v
+  bool IsDynamicExternUpdate(const AssignExpr& ae);
+
+  // ce calls an Extern<T> value e with arguments of any type: e(a1, ..., an)
+  // (this includes e.f(a1, ..., an), whose callee e.f is itself a dynamic member access)
+  bool IsDynamicExternCall(const CallExpr& ce);
   ```
 
-## `Extern` cannot be extended
+## 2.2  `Extern` cannot be extended
 
 `CheckExtendedTypeValidity` in [TypeCheckExtend.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckExtend.cpp) reports `sema_illegal_extended_type` for `extend Extern<T>`, including through a type alias.
 
-## For `toExtern`
+## 2.3. Implicit conversions
 
 ### `Check` gets an opt-in flag
 
@@ -89,12 +102,9 @@ Everything else keeps the normal check against `Extern<T>`, so these are errors:
 
 In [TypeCheckCall.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckCall.cpp):
 
-```text
-CheckCandidate:   fmu.usesExternConversion = some argument needs NeedExternConversion to its parameter
-CheckMatchResult: if some legal candidate has !usesExternConversion, drop the ones with usesExternConversion
-```
+Candidates that need no conversion are preferred over those that need one.
 
-## For `eval`
+## 2.4. Dynamic operations
 
 A dynamic node is typed `Extern<T>`, the type of its receiver. It has no target and no `desugarExpr`, and its operands are synthesized without a target, because the tree takes them as `Any`. So none of them is a `toExtern` position.
 
@@ -133,9 +143,9 @@ if (auto ma = DynamicCast<const MemberAccess*>(&node);
 }
 ```
 
-# Desugaring
+# 3. Desugaring
 
-## The pass
+## 3.1. The pass
 
 New file `src/Sema/Desugar/AfterTypeCheck/ExternDesugaring.cpp`:
 
@@ -179,7 +189,7 @@ visit(node):
         apply the conversion handler of node
 ```
 
-## Conversions
+## 3.2. Conversions
 
 Each handler pairs a value with the type expected at its Sema position:
 
@@ -198,7 +208,7 @@ if NeedExternConversion(U, Extern<T>):
     e.ty          = Extern<T>
 ```
 
-## Dynamic operations
+## 3.3. Dynamic operations
 
 The outermost dynamic node becomes `T.eval(tree)`. Nested dynamic nodes become nodes of the tree. Any other expression, including a plain `Extern` variable, is a leaf: it is cloned and desugared on its own.
 
@@ -237,7 +247,7 @@ if lhs is base.x and base may have side effects:   // anything but a variable, a
     { let tmp = base; tmp.x = T.eval(ExternFunctionCall(ExternMemberAccess(tmp.x, "op"), [v])) }
 ```
 
-## The generated calls
+## 3.4. The generated calls
 
 They are fully typed ASTs and are not type checked again:
 
