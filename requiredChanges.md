@@ -55,10 +55,10 @@ Candidates that need no conversion are preferred over those that need one.
 
 ### New pass
 
-New file `src/Sema/Desugar/AfterTypeCheck/ExternConversion.cpp`.
+New file `src/Sema/Desugar/AfterTypeCheck/ExternDesugaring.cpp`. It rewrites both implicit conversions to `Extern<T>` (into `T.toExtern<U>(e)`) and dynamic operations on `Extern<T>` values (into `T.eval(tree)`), in a single walk.
 
 ```cpp
-void TypeCheckerImpl::DesugarExternConversions(ASTContext& ctx, Package& pkg);
+void TypeCheckerImpl::DesugarExtern(ASTContext& ctx, Package& pkg);
 ```
 
 It is called in `PerformDesugarAfterSema` after `TryDesugarForCoalescing` and before `AutoBoxing::AddOptionBox`. This is before generic instantiation, so generic bodies are rewritten once, including `T.toExtern` on a generic `T`.
@@ -72,7 +72,7 @@ void TypeChecker::TypeCheckerImpl::PerformDesugarAfterSema(std::vector<Ptr<AST::
     for (auto& pkg : pkgs) {
         PerformDesugarAfterTypeCheck(*ci->pkgCtxMap[pkg], *pkg);
         TryDesugarForCoalescing(*pkg);
-        DesugarExternConversions(*ci->pkgCtxMap[pkg], *pkg); // new
+        DesugarExtern(*ci->pkgCtxMap[pkg], *pkg); // new
         AutoBoxing autoBox(typeManager);
         autoBox.AddOptionBox(*pkg);
     }
@@ -86,9 +86,9 @@ Passes in `PerformDesugarAfterSema`, in order, one example each:
 
 | # | Pass | Before | After |
 |---|---|---|---|
-| 1 | `PerformDesugarAfterTypeCheck`: interop, declarations, and per-node rewrites such as `is`/`as`, ranges, string interpolation | `e is T` | `match (e) { case _: T => true case _ => false }` |
+| 1 | `PerformDesugarAfterTypeCheck`: interop (Java, Objective-C, including glue code generation), declarations, and per-node rewrites such as `is`/`as`, ranges, string interpolation | `e is T` | `match (e) { case _: T => true case _ => false }` |
 | 2 | `TryDesugarForCoalescing` | `opt ?? 11` | `match (opt) { case Some(x) => x case None => 11 }` |
-| 3 | `DesugarExternConversions` **(new)** | `let e: Extern<RT> = 1` | `let e: Extern<RT> = RT.toExtern<Int64>(1)` |
+| 3 | `DesugarExtern` **(new)** | `let e: Extern<RT> = 1` | `let e: Extern<RT> = RT.toExtern<Int64>(1)` |
 | 4 | `AutoBoxing::AddOptionBox` | `let o: ?Int64 = 1` | `let o: ?Int64 = Some(1)` |
 
 Each pass wraps the result of the earlier ones, because it takes the existing `desugarExpr` as its input. For example, `let e: Extern<RT> = opt ?? 11` becomes a `match` in pass 2, and pass 3 then wraps that: `RT.toExtern<Int64>(match (opt) { ... })`.
