@@ -29,7 +29,8 @@ After every step, rerun the `toExtern` tests (11/11) and the `compiler/Sema` sui
     // obj1.f().x.y op= xpto
     T.eval(ExternCompoundAssignment(ExternMemberAccess(obj1.f().x, "y"), "op", xpto))
     ```
-- Binary and unary operators on `Extern` remain errors (`binaryOps.cj`).
+- Binary and unary operators on `Extern` are dynamic calls of the operator, e.g. `e1 + e2` is `T.eval(ExternFunctionCall(ExternMemberAccess(e1, "+"), [e2]))` of type `Extern<T>`. `binaryOps.cj` expects this: `if (e1 < e2)` fails because the condition is not `Bool`.
+- `++` and `--` on `Extern` remain errors, since they require an integer type.
 
 ## Tasks
 
@@ -69,17 +70,16 @@ After every step, rerun the `toExtern` tests (11/11) and the `compiler/Sema` sui
 
 6. **Compound assignment.** Depends on tasks 4 and 5.
    - Dynamic last access: branch at the start of `InferAssignExprCheckCaseOverloading`, and desugar to `ExternCompoundAssignment`.
-   - Statically resolved left side: the existing rewrite `lhs = lhs.op(v)` type checks as a dynamic call. The pass must keep `mapExpr` and `SIDE_EFFECT` so the receiver is evaluated once.
-   - Accept operator names as dynamic members only for calls coming from a compound-assignment rewrite, so that plain binary and unary operators still fail.
-   - `++` and `--` are covered automatically, since they are rewritten into `+= 1` and `-= 1` before type checking.
+   - Statically resolved left side: the existing rewrite `lhs = lhs.op(v)` type checks as a dynamic call. The copy of `lhs` in the tree must not keep its `mapExpr`, which CHIR resolves to a reference to `lhs`. If the receiver of `lhs` may have side effects, it is stored first: `{ let tmp = base; tmp.x = T.eval(...tmp.x...) }`.
+   - Tests: `compoundAssignment.cj`.
 
 7. **Generics and the remaining tests.**
-   - `generics/`, `extern_exceptions`, `inheritedRuntimeImpl`, `interfaceRuntimeUnimplemented`, and `getPayload*`, which should be renamed because they don't use `getPayload`.
+   - `generics/`, `extern_exceptions`, `inheritedRuntimeImpl`, `interfaceRuntimeUnimplemented`, and `getPayload*`, renamed to `externPayload*` because they don't use `getPayload`.
+   - `interfaceRuntimeUnimplemented`: the desugaring reports calls of `eval` and `toExtern` that a runtime doesn't implement, like Sema does for a hand-written call. The desugaring doesn't run after a Sema error, so the `fromExtern` case moved to `interfaceRuntimeUnimplementedFromExtern`.
    - The negative test `binaryOps`.
-   - A new test for multiple assignment `(e.x, b) = (1, 2)`.
+   - A new test for multiple assignment `(e.x, b) = (1, 2)`: `multipleAssignment`.
    - Add all of them to `extern_testlist` (excluding `forced_cast/`).
 
 8. **Cleanup.**
-   - Update the LSP golden files in `cangjie_tools`.
    - Check `.cjo` export and incremental compilation for generic functions that use dynamic operations.
    - Extend `requiredChanges.md`.
