@@ -34,13 +34,14 @@ Sema only accepts these expressions and gives them their types. The rewrites hap
 
 ## 2.1 Helpers
 
-- `Ty::IsCoreExternType()` in [Types.h](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/include/cangjie/AST/Types.h) / [Types.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/AST/Types.cpp): an enum of the core package named `Extern` with one type argument. It uses the new constants `STD_LIB_EXTERN` and `STD_LIB_FOREIGN_RUNTIME` from [ConstantsUtils.h](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/include/cangjie/Utils/ConstantsUtils.h).
-- `NeedExternConversion(from, to)` in [TypeCheckerImpl.h](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckerImpl.h) / [TypeChecker.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeChecker.cpp), shared by Sema and the desugaring:
+- `Ty::IsCoreExternType()` in [Types.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/include/cangjie/AST/Types.h) / [Types.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/AST/Types.cpp): an enum of the core package named `Extern` with one type argument. It uses the new constants `STD_LIB_EXTERN` and `STD_LIB_FOREIGN_RUNTIME` from [ConstantsUtils.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/include/cangjie/Utils/ConstantsUtils.h).
+
+- `NeedExternConversion(from, to)` in [TypeCheckerImpl.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckerImpl.h) / [TypeChecker.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeChecker.cpp), shared by Sema and the desugaring:
   ```cpp
   // `to` is `Extern<T>`, `from` is a valid type, not `Nothing`, and not the same as `to`
   bool NeedExternConversion(Ty& from, Ty& to);
   ```
-- Dynamic-node predicates in [TypeCheckUtil.h](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckUtil.h) / [TypeCheckUtil.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckUtil.cpp), shared by Sema and the desugaring:
+- Dynamic-node predicates in [TypeCheckUtil.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckUtil.h) / [TypeCheckUtil.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckUtil.cpp), shared by Sema and the desugaring:
   ```cpp
   // e is a value of type Extern<T>, not the type name Extern<T> itself
   // (so Extern<T>.ExternPayload(v) is a normal enum constructor call, not a dynamic access)
@@ -65,20 +66,22 @@ Sema only accepts these expressions and gives them their types. The rewrites hap
 
 ## 2.2  `Extern` cannot be extended
 
-`CheckExtendedTypeValidity` in [TypeCheckExtend.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckExtend.cpp) reports `sema_illegal_extended_type` for `extend Extern<T>`, including through a type alias.
+`CheckExtendedTypeValidity` in [TypeCheckExtend.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExtend.cpp) reports `sema_illegal_extended_type` for `extend Extern<T>`, including through a type alias.
 
 ## 2.3. Implicit conversions
 
 ### `Check` gets an opt-in flag
+
+Function `Check` declared in `https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeChecker.cpp` is modified to receive an extra argument: `allowToExternConv`. This indicates whether an implicit extern conversion is allowed to be inserted.
 
 ```cpp
 bool Check(ASTContext& ctx, Ptr<Ty> target, Ptr<Node> node, bool allowToExternConv = false);
 ```
 
 ```text
-if allowToExternConv and target is Extern<T> and node is an Expr:
+if allowToExternConv and target is Extern<T> and node is an Expr that is not Extern<T>:
     synthesize node without a target
-    succeed if its type U is valid; U stays on the node
+    succeed if the resulting type is a valid type
 else:
     check as before
 ```
@@ -87,33 +90,33 @@ else:
 
 | Position | Function | File |
 |---|---|---|
-| Variable initializer, including member variables | `SynchronizeTypeAndInitializer` | [TypeCheckDecl.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckDecl.cpp) |
-| Assignment right-hand side | `SynAssignExpr` | [AssignExpr.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckExpr/AssignExpr.cpp) |
-| Call argument | `ChkFuncArg` | [TypeChecker.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeChecker.cpp) |
-| `return` argument | `SynReturnExpr` | [ReturnExpr.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckExpr/ReturnExpr.cpp) |
-| Function body: functions, lambdas, property getters | `CheckBodyRetType` | [TypeChecker.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeChecker.cpp) |
+| Variable initializer, including member variables | `SynchronizeTypeAndInitializer` | [TypeCheckDecl.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckDecl.cpp) |
+| Assignment right-hand side | `SynAssignExpr` | [AssignExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/AssignExpr.cpp) |
+| Call argument | `ChkFuncArg` | [TypeChecker.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeChecker.cpp) |
+| `return` argument | `SynReturnExpr` | [ReturnExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/ReturnExpr.cpp) |
+| Function body: functions, lambdas, property getters | `CheckBodyRetType` | [TypeChecker.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeChecker.cpp) |
 
 Everything else keeps the normal check against `Extern<T>`, so these are errors:
-- array and tuple literal elements;
 - default parameter values;
+- array and tuple literal elements;
 - individual `if`/`match`/`try` branches. The whole expression can still be converted when it is itself in an allowed position.
 
 ### Overload ranking
 
-In [TypeCheckCall.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckCall.cpp):
+In [TypeCheckCall.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckCall.cpp):
 
 Candidates that need no conversion are preferred over those that need one.
 
 ## 2.4. Dynamic operations
 
-A dynamic node is typed `Extern<T>`, the type of its receiver. It has no target and no `desugarExpr`, and its operands are synthesized without a target, because the tree takes them as `Any`. So none of them is a `toExtern` position.
+A dynamic node is typed `Extern<T>`, the type of its receiver. It has no target and its operands are synthesized without a target, because the tree takes them as `Any`. So none of them is a `toExtern` position.
 
 | Source | Where | Rule |
 |---|---|---|
-| `e.f` | `InferMemberAccess` in [NameReferenceExpr.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckExpr/NameReferenceExpr.cpp) | no member lookup, `ty = Extern<T>` |
-| `e[i1, ..., in]` | `ChkSubscriptExpr` → `ChkExternSubscript` in [SubscriptExpr.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckExpr/SubscriptExpr.cpp), before the `e.[](i)` rewrite | indices of any type |
-| `e(args)`, `e.f(args)` | `ChkCallExpr` → `ChkExternCall` in [TypeCheckCall.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckCall.cpp), before candidate lookup; `ChkCallBaseMemberAccess` accepts the callee `e.f` | arguments of any type; named and `inout` arguments are errors |
-| `e.f = v`, `e[i1, ..., in] = v` | `SynAssignExpr` → `SynExternUpdate` in [AssignExpr.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/TypeCheckExpr/AssignExpr.cpp), before operator overloading | no `IsAssignable` check, value of any type, `ty = Extern<T>` (not `Unit`) |
+| `e.f` | `InferMemberAccess` in [NameReferenceExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/NameReferenceExpr.cpp) | no member lookup, `ty = Extern<T>` |
+| `e[i1, ..., in]` | `ChkSubscriptExpr` → `ChkExternSubscript` in [SubscriptExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/SubscriptExpr.cpp), before the `e.[](i)` rewrite | indices of any type |
+| `e(args)`, `e.f(args)` | `ChkCallExpr` → `ChkExternCall` in [TypeCheckCall.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckCall.cpp), before candidate lookup; `ChkCallBaseMemberAccess` accepts the callee `e.f` | arguments of any type; named and `inout` arguments are errors |
+| `e.f = v`, `e[i1, ..., in] = v` | `SynAssignExpr` → `SynExternUpdate` in [AssignExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/AssignExpr.cpp), before operator overloading | no `IsAssignable` check, value of any type, `ty = Extern<T>` (not `Unit`) |
 | `e.f op= v`, `e[i] op= v` | same as the update | `ty = Extern<T>` |
 
 `SynExternUpdate` in pseudocode:
@@ -134,7 +137,7 @@ No other change is needed for:
 
 ### Type check cache
 
-Sema may check a node several times and restore its targets from a cache. `CollectTargets` only records the target of the receiver of a member access that has a target. `RestoreTargets` in [Cache.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/AST/Cache.cpp) must match, otherwise it clears the target of `e` in a dynamic `e.f`:
+Sema may check a node several times and restore its targets from a cache. `CollectTargets` only records the target of the receiver of a member access that has a target. `RestoreTargets` in [Cache.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/AST/Cache.cpp) must match, otherwise it clears the target of `e` in a dynamic `e.f`:
 
 ```cpp
 if (auto ma = DynamicCast<const MemberAccess*>(&node);
@@ -147,13 +150,13 @@ if (auto ma = DynamicCast<const MemberAccess*>(&node);
 
 ## 3.1. The pass
 
-New file `src/Sema/Desugar/AfterTypeCheck/ExternDesugaring.cpp`:
+New file [ExternDesugaring.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/Desugar/AfterTypeCheck/ExternDesugaring.cpp):
 
 ```cpp
 void TypeCheckerImpl::DesugarExtern(ASTContext& ctx, Package& pkg);
 ```
 
-It is called in `PerformDesugarAfterSema` in [AfterTypeCheck.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Sema/Desugar/AfterTypeCheck.cpp):
+It is called in `PerformDesugarAfterSema` in [AfterTypeCheck.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/Desugar/AfterTypeCheck.cpp):
 
 ```cpp
 for (auto& pkg : pkgs) {
@@ -165,7 +168,7 @@ for (auto& pkg : pkgs) {
 }
 ```
 
-`PerformDesugarAfterSema` is the `DESUGAR_AFTER_SEMA` stage: after `SEMA`, before `GENERIC_INSTANTIATION` (see [CompilerInstance.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Frontend/CompilerInstance.cpp) and [CompileStrategy.cpp](https://gitcode.com/Cangjie/cangjie_compiler/blob/main/src/Frontend/CompileStrategy.cpp)). So generic bodies are rewritten once, including calls on a generic runtime `T`. The stage doesn't run when Sema reported errors.
+`PerformDesugarAfterSema` is the `DESUGAR_AFTER_SEMA` stage: after `SEMA`, before `GENERIC_INSTANTIATION` (see [CompilerInstance.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Frontend/CompilerInstance.cpp) and [CompileStrategy.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Frontend/CompileStrategy.cpp)). So generic bodies are rewritten once, including calls on a generic runtime `T`. The stage doesn't run when Sema reported errors.
 
 | # | Pass | Before | After |
 |---|---|---|---|
