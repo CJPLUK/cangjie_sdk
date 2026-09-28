@@ -193,17 +193,17 @@ for (auto& pkg : pkgs) {
 | 3 | `DesugarExtern` **(new)** | `let e: Extern<RT> = 1` | `let e: Extern<RT> = RT.toExtern<Int64>(1)` |
 | 4 | `AutoBoxing::AddOptionBox` | `let o: ?Int64 = 1` | `let o: ?Int64 = Some(1)` |
 
-## 3.2. Conversions
+## 3.2. Implicit conversions
 
-Each handler pairs a value with the type expected at its Sema position:
+The pass converts a value `e: U` wherever `Extern<T>` is expected in the following cases:
 
-| Node | Value | Expected type |
-|---|---|---|
-| `VarDecl` | `initializer expression` | type of the declaration |
-| `AssignExpr` | `rightExpr` | type of `leftValue` |
-| `CallExpr` | each argument | the matching parameter type of `baseFunc` |
-| `ReturnExpr` | `expr` | return type of the enclosing function |
-| `FuncBody` | last expression of `body` | return type |
+| Node | Value `e` | Expected type | Example | Desugared |
+|---|---|---|---|---|
+| `VarDecl` | `initializer expression` | type of the declaration | `let x: Extern<RT> = 1` | `let x: Extern<RT> = RT.toExtern<Int64>(1)` |
+| `AssignExpr` | `rightExpr` | type of `leftValue` | `x = "a"` | `x = RT.toExtern<String>("a")` |
+| `CallExpr` | each argument | the matching parameter type of `baseFunc` | `f(1)` with `func f(p: Extern<RT>)` | `f(RT.toExtern<Int64>(1))` |
+| `ReturnExpr` | `expr` | return type of the enclosing function | `return true` in `func g(): Extern<RT>` | `return RT.toExtern<Bool>(true)` |
+| `FuncBody` | last expression of `body` | return type | `func g(): Extern<RT> { 1 }` | `func g(): Extern<RT> { RT.toExtern<Int64>(1) }` |
 
 ```text
 if NeedExternConversion(U, Extern<T>):
