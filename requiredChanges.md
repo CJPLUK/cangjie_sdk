@@ -61,7 +61,15 @@ Sema only accepts these expressions and gives them their types. The rewrites hap
   // (this includes e.f(a1, ..., an), whose callee e.f is itself a dynamic member access)
   bool IsDynamicExternCall(const CallExpr& ce);
   ```
-- `LookupForeignRuntimeFunc(ctx, T, name, pos)` in [TypeCheckerImpl.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckerImpl.h) / [ExternDesugaring.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/Desugar/AfterTypeCheck/ExternDesugaring.cpp), used by the desugaring to find `toExtern` and `eval`.
+- `LookupForeignRuntimeFunc(ctx, T, name, expr)` in [TypeCheckerImpl.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckerImpl.h) / [ExternDesugaring.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/Desugar/AfterTypeCheck/ExternDesugaring.cpp), used by the desugaring to find `toExtern` and `eval`:
+  ```cpp
+  // ctx:       the AST context of the package being desugared
+  // runtimeTy: the runtime T of Extern<T>, a concrete type or a generic parameter
+  // name:      the static function to find, "toExtern" or "eval"
+  // expr:      the expression being desugared; its file scopes the lookup, and errors are reported at it
+  // Returns the function and, if it is declared in an interface, the instantiated interface type.
+  ForeignRuntimeFunc LookupForeignRuntimeFunc(ASTContext& ctx, Ty& runtimeTy, const std::string& name, const Expr& expr);
+  ```
 
 # 3. Type checking
 
