@@ -105,46 +105,62 @@ Everything else keeps the normal check against `Extern<T>`, so these are errors:
 
 In [TypeCheckCall.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckCall.cpp):
 
-Candidates that need no conversion are preferred over those that need one.
+Candidates that need no conversion are preferred. Among the remaining candidates the usual most-specific rule applies, and an ambiguity is an error.
 
 ## 2.4. Dynamic operations
 
-A dynamic node is typed `Extern<T>`, the type of its receiver. It has no target and its operands are synthesized without a target, because the tree takes them as `Any`. So none of them is a `toExtern` position.
+A dynamic node is typed `Extern<T>`, the type of its receiver.
 
 | Source | Where | Rule |
 |---|---|---|
-| `e.f` | `InferMemberAccess` in [NameReferenceExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/NameReferenceExpr.cpp) | no member lookup, `ty = Extern<T>` |
-| `e[i1, ..., in]` | `ChkSubscriptExpr` → `ChkExternSubscript` in [SubscriptExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/SubscriptExpr.cpp), before the `e.[](i)` rewrite | indices of any type |
-| `e(args)`, `e.f(args)` | `ChkCallExpr` → `ChkExternCall` in [TypeCheckCall.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckCall.cpp), before candidate lookup; `ChkCallBaseMemberAccess` accepts the callee `e.f` | arguments of any type; named and `inout` arguments are errors |
-| `e.f = v`, `e[i1, ..., in] = v` | `SynAssignExpr` → `SynExternUpdate` in [AssignExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/AssignExpr.cpp), before operator overloading | no `IsAssignable` check, value of any type, `ty = Extern<T>` (not `Unit`) |
+| `e.f` | `InferMemberAccess` in [NameReferenceExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/NameReferenceExpr.cpp) | if `e: Extern<T>` then `ty = Extern<T>` |
+| `e[idx]` | `ChkSubscriptExpr` in [SubscriptExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/SubscriptExpr.cpp)  |  if `e: Extern<T>` then `ty = Extern<T>`, `idx` has any valid type |
+| `e(args)`, `e.f(args)` | `ChkCallExpr` in [TypeCheckCall.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckCall.cpp), before candidate lookup | if `e: Extern<T>`/`e.f : Extern<T>` then `ty = Extern<T>`; arguments of any type; named and `inout` arguments are errors |
+| `e.f = v`, `e[idx] = v` | `SynAssignExpr` in [AssignExpr.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExpr/AssignExpr.cpp), before operator overloading | if `e : Extern<T>` then `ty = Extern<T>`; `v`, `idx` of any type |
 | `e.f op= v`, `e[i] op= v` | same as the update | `ty = Extern<T>` |
 
-`SynExternUpdate` in pseudocode:
+synthesize `e.f` in pseudocode:
 
 ```text
-if ae.leftValue is e.f or e[i1, ..., in]:
+synthesize e
+if IsDynamicExternMemberAccess(ma):    // e is an Extern<T> value, e.f is not a left value
+    ma.ty = e.ty                       // no member lookup, no target
+```
+
+synthesize `e[idx]` in pseudocode:
+
+```text
+synthesize e and the index             // already done for every subscript
+if IsDynamicExternSubscript(se):       // before the rewrite into e.[](idx)
+    se.ty = e.ty
+```
+
+synthesize `e(args)`, `e.f(args)` in pseudocode:
+
+```text
+synthesize the callee e                // a dynamic callee e.f is accepted as it is
+if IsDynamicExternCall(ce):            // before candidate lookup
+    report named and inout arguments
+    synthesize the arguments without a target
+    ce.ty = e.ty
+```
+
+synthesize `e.f = v`, `e[idx] = v` in pseudocode:
+
+```text
+if ae.leftValue is e.f or e[idx]:
     synthesize e
     if IsDynamicExternUpdate(ae):
-        synthesize the indices and v without a target
+        synthesize the index and v without a target
         ae.leftValue.ty = ae.ty = e.ty
 ```
+
+When one of these nodes is checked against an expected type, `Extern<T>` must be a subtype of it.
 
 No other change is needed for:
 - **Operators.** `e1 + e2` and `-e` are already rewritten into `e1.+(e2)` and `e.-()`, which are dynamic calls of type `Extern<T>`. So `if (e1 < e2)` is an error: the condition is not `Bool`.
 - **`++` and `--`,** which stay errors: they need an integer type.
-- **A statically resolved compound assignment `lhs op= v`** (a variable, a Cangjie field or a Cangjie array element of type `Extern<T>`). Sema's rewrite `lhs = lhs.op(v)` checks as usual: `lhs` must be mutable, the type is `Unit`, and `lhs.op(v)` is a dynamic call.
 - **A multiple assignment `(e.x, b) = (1, 2)`,** which becomes one dynamic update per element.
-
-### Type check cache
-
-Sema may check a node several times and restore its targets from a cache. `CollectTargets` only records the target of the receiver of a member access that has a target. `RestoreTargets` in [Cache.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/AST/Cache.cpp) must match, otherwise it clears the target of `e` in a dynamic `e.f`:
-
-```cpp
-if (auto ma = DynamicCast<const MemberAccess*>(&node);
-       targets.first && ma && ma->baseExpr && ma->baseExpr->IsReferenceExpr()) { // targets.first is new
-    ma->baseExpr->SetTarget(targets.second);
-}
-```
 
 # 3. Desugaring
 
@@ -177,37 +193,21 @@ for (auto& pkg : pkgs) {
 | 3 | `DesugarExtern` **(new)** | `let e: Extern<RT> = 1` | `let e: Extern<RT> = RT.toExtern<Int64>(1)` |
 | 4 | `AutoBoxing::AddOptionBox` | `let o: ?Int64 = 1` | `let o: ?Int64 = Some(1)` |
 
-Each pass wraps the `desugarExpr` of the earlier ones. For example `let e: Extern<RT> = opt ?? 11` becomes `RT.toExtern<Int64>(match (opt) { ... })`.
-
-A single `Walker` does both rewrites:
-
-```text
-visit(node):
-    if node is a static compound assignment on Extern<T>: prepare it (see below)
-    if node is dynamic:
-        node.desugarExpr = T.eval(BuildTree(node))
-        visit(node.desugarExpr)   // the leaves may contain conversions and dynamic operations
-        skip children
-    else:
-        apply the conversion handler of node
-```
-
 ## 3.2. Conversions
 
 Each handler pairs a value with the type expected at its Sema position:
 
 | Node | Value | Expected type |
 |---|---|---|
-| `VarDecl` | `initializer` | type of the declaration |
+| `VarDecl` | `initializer expression` | type of the declaration |
 | `AssignExpr` | `rightExpr` | type of `leftValue` |
 | `CallExpr` | each argument | the matching parameter type of `baseFunc` |
-| `ArrayExpr` | the item of `Array<E>(n, item: v)` or `VArray` | `E` |
 | `ReturnExpr` | `expr` | return type of the enclosing function |
 | `FuncBody` | last expression of `body` | return type |
 
 ```text
 if NeedExternConversion(U, Extern<T>):
-    e.desugarExpr = T.toExtern<U>(e.desugarExpr, or a clone of e)
+    e.desugarExpr = T.toExtern<U>(e.desugarExpr /* or a clone of e */)
     e.ty          = Extern<T>
 ```
 
