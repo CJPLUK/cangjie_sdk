@@ -30,9 +30,7 @@ The compiler introduces two rewrites:
 
 Sema only accepts these expressions and gives them their types. The rewrites happen in one pass after Sema, driven by the final types.
 
-# 2. Type checking
-
-## 2.1 Helpers
+# 2. Helpers
 
 - `Ty::IsCoreExternType()` in [Types.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/include/cangjie/AST/Types.h) / [Types.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/AST/Types.cpp): an enum of the core package named `Extern` with one type argument. It uses the new constants `STD_LIB_EXTERN` and `STD_LIB_FOREIGN_RUNTIME` from [ConstantsUtils.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/include/cangjie/Utils/ConstantsUtils.h).
 
@@ -63,12 +61,15 @@ Sema only accepts these expressions and gives them their types. The rewrites hap
   // (this includes e.f(a1, ..., an), whose callee e.f is itself a dynamic member access)
   bool IsDynamicExternCall(const CallExpr& ce);
   ```
+- `LookupForeignRuntimeFunc(ctx, T, name, pos)` in [TypeCheckerImpl.h](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckerImpl.h) / [ExternDesugaring.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/Desugar/AfterTypeCheck/ExternDesugaring.cpp), used by the desugaring to find `toExtern` and `eval`.
 
-## 2.2  `Extern` cannot be extended
+# 3. Type checking
+
+## 3.1. `Extern` cannot be extended
 
 `CheckExtendedTypeValidity` in [TypeCheckExtend.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/TypeCheckExtend.cpp) reports `sema_illegal_extended_type` for `extend Extern<T>`, including through a type alias.
 
-## 2.3. Implicit conversions
+## 3.2. Implicit conversions
 
 ### `Check` gets an opt-in flag
 
@@ -107,7 +108,7 @@ In [TypeCheckCall.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_e
 
 Candidates that need no conversion are preferred. Among the remaining candidates the usual most-specific rule applies, and an ambiguity is an error.
 
-## 2.4. Dynamic operations
+## 3.3. Dynamic operations
 
 A dynamic node is typed `Extern<T>`, the type of its receiver.
 
@@ -162,9 +163,9 @@ No other change is needed for:
 - **`++` and `--`,** which stay errors: they need an integer type.
 - **A multiple assignment `(e.x, b) = (1, 2)`,** which becomes one dynamic update per element.
 
-# 3. Desugaring
+# 4. Desugaring
 
-## 3.1. The pass
+## 4.1. The pass
 
 New file [ExternDesugaring.cpp](https://github.com/CJPLUK/cangjie_compiler/blob/feature_extern_with_enum/src/Sema/Desugar/AfterTypeCheck/ExternDesugaring.cpp):
 
@@ -193,7 +194,7 @@ for (auto& pkg : pkgs) {
 | 3 | `DesugarExtern` **(new)** | `let e: Extern<RT> = 1` | `let e: Extern<RT> = RT.toExtern<Int64>(1)` |
 | 4 | `AutoBoxing::AddOptionBox` | `let o: ?Int64 = 1` | `let o: ?Int64 = Some(1)` |
 
-## 3.2. Implicit conversions
+## 4.2. Implicit conversions
 
 The pass converts a value `e: U` wherever `Extern<T>` is expected in the following cases:
 
@@ -211,9 +212,9 @@ if NeedExternConversion(U, Extern<T>):
     e.ty          = Extern<T>
 ```
 
-## 3.3. Dynamic operations
+## 4.3. Dynamic operations
 
-A dynamic node is one of the expressions recognized by the `IsDynamicExtern*` predicates (2.1) that has no `desugarExpr` yet. It becomes `T.eval(tree)`, where `tree` is a value of `Extern<T>` that describes the operation with the constructors of `Extern<T>`. A chain of dynamic nodes, such as `e.a.b(1)`, gets a single `T.eval` around the tree of the whole chain.
+A dynamic node is one of the expressions recognized by the `IsDynamicExtern*` predicates (section 2) that has no `desugarExpr` yet. It becomes `T.eval(tree)`, where `tree` is a value of `Extern<T>` that describes the operation with the constructors of `Extern<T>`. A chain of dynamic nodes, such as `e.a.b(1)`, gets a single `T.eval` around the tree of the whole chain.
 
 ### Finding the outermost dynamic node
 
@@ -265,7 +266,7 @@ e.f(x, { y: Extern<T> => y.g })
                    // T.eval(ExternFunctionCall(ExternMemberAccess(e, "f"), [x, { y => T.eval(ExternMemberAccess(y, "g")) }]))
 ```
 
-## 3.4. The generated calls
+## 4.4. The generated calls
 
 The pass creates fully typed ASTs, which are not type checked again. The calls, their callees and the `Array` literal are marked `IMPLICIT_ADD`. The created nodes take the source position of the node they replace.
 
@@ -289,7 +290,7 @@ CallExpr [CALL_DECLARED_FUNCTION, resolvedFunction = eval, ty = Extern<T>]
    └─ tree
 ```
 
-`matchedParentTy` is set when the function is found in an interface (see the lookup below).
+`matchedParentTy` is set when the function is found in an interface (see `LookupForeignRuntimeFunc` in section 2).
 
 ### Tree nodes
 
@@ -313,10 +314,3 @@ The arguments of each constructor:
 | `ExternCompoundAssignment` | the constructor call for the access `e.f` or `e[i]`; the operator without `=` as a `String` literal (`"+"` for `+=`); `BuildTree(v)` |
 
 `BuildTree(x)` is a nested constructor call of type `Extern<T>` only when `x` is dynamic. Otherwise it is a clone of `x`, with its own type, even where the parameter is `Any`.
-
-### Runtime function lookup
-
-`LookupForeignRuntimeFunc(ctx, T, name, pos)` is shared by `toExtern` and `eval`:
-
-- **Concrete `T`:** `FieldLookup(ctx, decl(T), name, {T, pos.curFile})`, keeping a `static` function and preferring an implementation over the abstract declaration. This handles inheritance from a superclass or an interface default. When the function comes from an interface, `matchedParentTy = Promote(T, interface)`. If only the abstract declaration is found, it reports `sema_interface_call_with_unimplemented_call` at `pos`, like a hand-written `T.name(...)`.
-- **Generic `T`:** `ForeignRuntime<T>.name`.
