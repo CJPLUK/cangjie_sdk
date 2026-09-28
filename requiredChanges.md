@@ -51,12 +51,12 @@ Sema only accepts these expressions and gives them their types. The rewrites hap
   // (a left value e.f in e.f = v is handled by IsDynamicExternUpdate)
   bool IsDynamicExternMemberAccess(const MemberAccess& ma);
 
-  // se is a read of indices of any type on an Extern<T> value e: e[i1, ..., in], meaning e[i1]...[in]
+  // se is a read of an index of any type on an Extern<T> value e: e[i]
   // (a left value e[i] in e[i] = v is handled by IsDynamicExternUpdate)
   bool IsDynamicExternSubscript(const SubscriptExpr& se);
 
-  // ae assigns to a member or to indices of an Extern<T> value e:
-  // e.f = v, e[i1, ..., in] = v, e.f op= v, e[i1, ..., in] op= v
+  // ae assigns to a member or to an index of an Extern<T> value e:
+  // e.f = v, e[i] = v, e.f op= v, e[i] op= v
   bool IsDynamicExternUpdate(const AssignExpr& ae);
 
   // ce calls an Extern<T> value e with arguments of any type: e(a1, ..., an)
@@ -213,41 +213,56 @@ if NeedExternConversion(U, Extern<T>):
 
 ## 3.3. Dynamic operations
 
-The outermost dynamic node becomes `T.eval(tree)`. Nested dynamic nodes become nodes of the tree. Any other expression, including a plain `Extern` variable, is a leaf: it is cloned and desugared on its own.
+A dynamic node is one of the expressions recognized by the `IsDynamicExtern*` predicates (2.1) that has no `desugarExpr` yet. It becomes `T.eval(tree)`, where `tree` is a value of `Extern<T>` that describes the operation with the constructors of `Extern<T>`. A chain of dynamic nodes, such as `e.a.b(1)`, gets a single `T.eval` around the tree of the whole chain.
+
+### Finding the outermost dynamic node
+
+The walk visits parents before children:
 
 ```text
-BuildTree(x) = x is dynamic ? node for x : clone(x)
+visit(node):
+    if node is dynamic:
+        node.desugarExpr = T.eval(BuildTree(node))
+        visit(node.desugarExpr)      // the leaves of the tree may contain dynamic nodes of their own
+        skip the children of node    // the nested dynamic nodes are already part of the tree
+    else:
+        visit the children of node
 ```
 
-| Source | Tree |
-|---|---|
-| `e.f` | `ExternMemberAccess(BuildTree(e), "f")` |
-| `e[i]` | `ExternIndexedAccess(BuildTree(e), BuildTree(i))` |
-| `e[i, j, k]` | `ExternIndexedAccess(ExternIndexedAccess(ExternIndexedAccess(BuildTree(e), i), j), k)`, each index built |
-| `e(a1, ..., an)` | `ExternFunctionCall(BuildTree(e), [BuildTree(a1), ..., BuildTree(an)])` |
-| `e.f = v` | `ExternMemberUpdate(BuildTree(e), "f", BuildTree(v))` |
-| `e[i, j, k] = v` | `ExternIndexedUpdate(<tree of e[i, j]>, BuildTree(k), BuildTree(v))` |
-| `a op= v`, `a` a dynamic access | `ExternCompoundAssignment(<tree of a>, "op", BuildTree(v))`, `op` without `=` |
+So the first dynamic node met on the way down is the outermost one:
+- in `e.a.b(1)`, the call is visited before `e.a.b` and `e.a`;
+- in `f(e.a)`, the call `f(...)` is a normal Cangjie call, so the walk goes on into its argument, and `e.a` is the outermost dynamic node there.
+
+### Building the tree
+
+`BuildTree` turns a dynamic node into a constructor call of `Extern<T>`, and applies itself to the operands. An operand that is not dynamic (a variable, a literal, a normal call, a lambda, ...) is copied unchanged into the tree, as a leaf:
+
+```text
+BuildTree(x):
+    if x is not dynamic:
+        return clone(x)
+    match x:
+        e.f                  => ExternMemberAccess(BuildTree(e), "f")
+        e(a1, ..., an)       => ExternFunctionCall(BuildTree(e), [BuildTree(a1), ..., BuildTree(an)])
+        e[i]                 => ExternIndexedAccess(BuildTree(e), BuildTree(i))
+        e.f = v              => ExternMemberUpdate(BuildTree(e), "f", BuildTree(v))
+        e[i] = v             => ExternIndexedUpdate(BuildTree(e), BuildTree(i), BuildTree(v))
+        a op= v              => ExternCompoundAssignment(<tree of the access a>, "op", BuildTree(v))   // "+" for +=
+```
+
+Parentheses around a dynamic node are dropped: `(e.a).b` is built like `e.a.b`.
 
 Examples:
 
 ```cangjie
 e.a.b(1)           // T.eval(ExternFunctionCall(ExternMemberAccess(ExternMemberAccess(e, "a"), "b"), [1]))
+e[i] = v           // T.eval(ExternIndexedUpdate(e, i, v))
 obj.f().x.y += v   // T.eval(ExternCompoundAssignment(ExternMemberAccess(obj.f().x, "y"), "+", v))
+                   // obj.f().x is a Cangjie field of type Extern<T>, so it is a leaf
+g(e.a).b           // T.eval(ExternMemberAccess(g(T.eval(ExternMemberAccess(e, "a"))), "b"))
+                   // g returns Extern<T>; the leaf g(e.a) gets its own T.eval when the walk visits it
 e.f(x, { y: Extern<T> => y.g })
                    // T.eval(ExternFunctionCall(ExternMemberAccess(e, "f"), [x, { y => T.eval(ExternMemberAccess(y, "g")) }]))
-```
-
-Evaluation order of the operands is left to the runtime's `eval`.
-
-### Statically resolved compound assignment
-
-Sema rewrites `lhs op= v` into `lhs = lhs'.op(v)`, where the copy `lhs'` has `mapExpr = lhs` so that the receiver is evaluated once. `lhs'` becomes a leaf of the tree and is read as a value, while CHIR resolves `mapExpr` to a reference to `lhs`. So the pass, before building the tree:
-
-```text
-lhs'.mapExpr = null
-if lhs is base.x and base may have side effects:   // anything but a variable, a type or a package, possibly through fields
-    { let tmp = base; tmp.x = T.eval(ExternFunctionCall(ExternMemberAccess(tmp.x, "op"), [v])) }
 ```
 
 ## 3.4. The generated calls
