@@ -267,16 +267,52 @@ e.f(x, { y: Extern<T> => y.g })
 
 ## 3.4. The generated calls
 
-They are fully typed ASTs and are not type checked again:
+The pass creates fully typed ASTs, which are not type checked again. The calls, their callees and the `Array` literal are marked `IMPLICIT_ADD`. The created nodes take the source position of the node they replace.
+
+### `T.toExtern<U>(e)`
 
 ```text
-CallExpr [IMPLICIT_ADD, CALL_DECLARED_FUNCTION, ty = Extern<T>, resolvedFunction = toExtern | eval]
-└─ MemberAccess [IMPLICIT_ADD, instTys = {U} for toExtern, ty = (U) -> Extern<T> | (Extern<T>) -> Extern<T>, matchedParentTy]
-   └─ RefExpr T  (the runtime's declaration, or the GenericParamDecl for a generic T)
-└─ FuncArg e | tree
+CallExpr [CALL_DECLARED_FUNCTION, resolvedFunction = toExtern, ty = Extern<T>]
+├─ MemberAccess "toExtern" [target = toExtern, instTys = {U}, ty = (U) -> Extern<T>]
+│  └─ RefExpr T [ty = T]    // the runtime's declaration, or the GenericParamDecl for a generic T
+└─ FuncArg [ty = U]
+   └─ e                     // its previous desugarExpr, or a clone of e
 ```
 
-The tree nodes are calls of the enum constructors, instantiated for `Extern<T>`, with `IMPLICIT_ADD`. The arguments of `ExternFunctionCall` are an `Array<Any>` literal.
+### `T.eval(tree)`
+
+```text
+CallExpr [CALL_DECLARED_FUNCTION, resolvedFunction = eval, ty = Extern<T>]
+├─ MemberAccess "eval" [target = eval, ty = (Extern<T>) -> Extern<T>]
+│  └─ RefExpr T [ty = T]
+└─ FuncArg [ty = Extern<T>]
+   └─ tree
+```
+
+`matchedParentTy` is set when the function is found in an interface (see the lookup below).
+
+### Tree nodes
+
+Every node of the tree is a call of a constructor of `Extern<T>`:
+
+```text
+CallExpr [CALL_DECLARED_FUNCTION, resolvedFunction = C, ty = Extern<T>]
+├─ RefExpr C [ty = the type of C with T substituted, e.g. (Extern<T>, String) -> Extern<T>]
+└─ FuncArg [ty = type of the argument] x one per parameter of C
+```
+
+The arguments of each constructor:
+
+| Constructor `C` | Arguments |
+|---|---|
+| `ExternMemberAccess` | `BuildTree(e)`; the name `f` as a `String` literal |
+| `ExternIndexedAccess` | `BuildTree(e)`; `BuildTree(i)` |
+| `ExternFunctionCall` | `BuildTree(e)`; an `Array<Any>` literal, with its constructor set, holding `BuildTree(a)` for each argument `a` |
+| `ExternMemberUpdate` | `BuildTree(e)`; the name `f` as a `String` literal; `BuildTree(v)` |
+| `ExternIndexedUpdate` | `BuildTree(e)`; `BuildTree(i)`; `BuildTree(v)` |
+| `ExternCompoundAssignment` | the constructor call for the access `e.f` or `e[i]`; the operator without `=` as a `String` literal (`"+"` for `+=`); `BuildTree(v)` |
+
+`BuildTree(x)` is a nested constructor call of type `Extern<T>` only when `x` is dynamic. Otherwise it is a clone of `x`, with its own type, even where the parameter is `Any`.
 
 ### Runtime function lookup
 
