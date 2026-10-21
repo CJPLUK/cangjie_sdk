@@ -30,7 +30,7 @@
 
 ## Containerized builds
 - Compose services are `build-sdk-linux64` and `build-sdk-linuxarm`.
-- Use `FIXUID=$(id -u) FIXGID=$(id -g) docker compose run --rm <service>`.
+- Use `FIXUID=$(id -u) FIXGID=$(id -g) podman compose run --rm <service>`.
 - Root `README.md` says `FIXGUID`; `compose.yaml` actually uses `FIXGID`.
 
 ## OpenCode repo config

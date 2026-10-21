@@ -1,7 +1,7 @@
 {
   "name": "Cangjie SDK Dev",
   "context": "..",
-  "dockerFile": "../Dockerfile",
+  "dockerFile": "../Containerfile",
   "build": {
     "target": "devcontainer"
   },

@@ -23,27 +23,38 @@ There are services defined in `compose.yaml` which will build the SDK for differ
 
 ### Linux/x86_64
 ```shell
-FIXUID=`id -u` docker-compose run --rm build-sdk-linux64
+FIXUID=`id -u` docker compose run --rm build-sdk-linux64
 ```
 
 ### Linux/aarch64
 ```shell
-FIXUID=`id -u` docker-compose run --rm build-sdk-linuxarm
+FIXUID=`id -u` docker compose run --rm build-sdk-linuxarm
 ```
 
 ## Containerized unrestricted vibing (opencode)
 
-Assumes $HOME is /home/$USER (i.e. set up for linux not mac).
-This will use your auth file from your main opencode install (~/.local/share/opencode/auth.json).
+First copy the credentials from your host opencode (v2) install into the `opencode-data` volume using `opencode auth export`/`opencode auth import`.
+Rerun this whenever your host credentials change.
+The first argument selects the compose provider and defaults to `docker compose`.
+`podman-compose` also picks up `podman-compose.yaml` automatically.
 
 ```shell
-FIXUID=`id -u` docker compose run opencode-linux64
+container/opencode-import-auth.sh ["docker compose"|podman-compose|"nerdctl compose"]
 ```
+
+Then start containerized sessions with:
+```shell
+FIXUID=`id -u` docker compose run --rm opencode
+```
+
+The image is only built if missing, so add `--build` after changing the `Containerfile` or `container/opencode.json`.
+
+Credentials and sessions persist in the `opencode-data` volume; remove it with `docker compose down -v` to start fresh.
 
 ### Others
 TODO (with cross compilation instructions)
 
-For cross compilation to windows, it appears the docker images have the necessary toolchain already, it may work with the following env var:
+For cross compilation to windows, it appears the container images have the necessary toolchain already, it may work with the following env var:
 ```shell
 MINGW_PATH=/opt/buildtools/llvm-mingw-w64
 ```

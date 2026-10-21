@@ -30,8 +30,8 @@ USER dev
 FROM builder AS opencode
 
 RUN mkdir -p /home/dev/.config/opencode /home/dev/.local/share/opencode
-RUN touch /home/dev/.local/share/opencode/auth.json
-RUN curl -fsSL https://opencode.ai/install | bash
+RUN curl -fsSL https://opencode.ai/v2/install | bash
+COPY container/opencode.json /etc/opencode/opencode.json
 
 FROM builder AS devcontainer
 

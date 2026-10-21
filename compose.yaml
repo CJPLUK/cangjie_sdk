@@ -1,11 +1,14 @@
+x-build: &build
+  context: .
+  dockerfile: Containerfile
+  args:
+    - UID=${FIXUID:-1001}
+
 services:
   build-sdk:
     build:
-      context: .
-      dockerfile: Dockerfile
+      <<: *build
       target: builder
-      args:
-        - UID=${FIXUID:-1001}
     working_dir: /workspace
     environment:
       CANGJIE_VERSION: ${CANGJIE_VERSION:-0.0.1-dev}
@@ -25,7 +28,33 @@ services:
     build:
       target: opencode
     volumes:
+      - opencode-data:/home/dev/.local/share/opencode
+    command: /home/dev/.opencode/bin/opencode
+  # Started by container/opencode-import-auth.sh, which supplies the exported host credentials.
+  _import-auth:
+    build:
+      <<: *build
+      target: opencode
+    volumes:
+      - opencode-data:/home/dev/.local/share/opencode
       - type: bind
-        source: /home/${USER}/.local/share/opencode/auth.json
-        target: /home/dev/.local/share/opencode/auth.json
-    command: /home/dev/.opencode/bin/opencode --agent containerized
+        source: ${OPENCODE_AUTH_EXPORT:-/dev/null}
+        target: /run/opencode-auth.json
+        read_only: true
+    # auth import skips credentials that already exist, so stale copies are
+    # removed first to pick up the host's refreshed tokens.
+    command:
+      - bash
+      - -euo
+      - pipefail
+      - -c
+      - |
+        opencode=/home/dev/.opencode/bin/opencode
+        auth=/run/opencode-auth.json
+        for id in $$(python3 -c 'import json, sys; print(*(c["id"] for c in json.load(open(sys.argv[1]))))' "$$auth"); do
+            "$$opencode" api credential.remove --param "credentialID=$$id" > /dev/null 2>&1 || true
+        done
+        "$$opencode" auth import "$$auth"
+
+volumes:
+  opencode-data:

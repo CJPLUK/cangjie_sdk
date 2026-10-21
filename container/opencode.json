@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "containerized",
+  "plugins": ["cursor-opencode-provider@0.7.6"],
+  "agents": {
+    "build": { "disabled": true },
+    "plan": { "disabled": true },
+    "general": {
+      "permissions": [
+        { "action": "shell", "resource": "*", "effect": "allow" },
+        { "action": "edit", "resource": "*", "effect": "allow" }
+      ]
+    }
+  }
+}

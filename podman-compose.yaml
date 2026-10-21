@@ -1,0 +1,10 @@
+x-podman:
+  in_pod: false
+
+services:
+  build-sdk:
+    userns_mode: keep-id
+    volumes:
+      - ./:/workspace:Z
+  _import-auth:
+    userns_mode: keep-id
