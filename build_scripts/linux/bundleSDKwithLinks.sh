@@ -81,8 +81,8 @@ link_files cangjie/tools/bin "$WORKSPACE/cangjie_tools/cangjie-language-server/o
 link_tree "$WORKSPACE/cangjie_stdx/target" cangjie/stdx
 # Keep envsetup local because appending through a symlink would modify compiler output.
 materialize_file_if_link cangjie/envsetup.sh
-echo 'export CANGJIE_STDX_PATH=${CANGJIE_HOME}/stdx' >> cangjie/envsetup.sh
-echo 'export LD_LIBRARY_PATH=${CANGJIE_HOME}/linux_${ARCH}_cjnative/dynamic/stdx:${LD_LIBRARY_PATH}' >> cangjie/envsetup.sh
+echo 'export CANGJIE_STDX_PATH=${CANGJIE_HOME}/stdx/linux_x86_64_cjnative/dynamic/stdx' >> cangjie/envsetup.sh
+echo 'export LD_LIBRARY_PATH="$CANGJIE_STDX_PATH:$LD_LIBRARY_PATH"' >> cangjie/envsetup.sh
 link_files cangjie/runtime/lib/linux_${ARCH}_cjnative cangjie/stdx/linux_${ARCH}_cjnative/dynamic/stdx/*.so
 link_files cangjie/runtime/lib/linux_${ARCH}_cjnative cangjie/stdx/linux_${ARCH}_cjnative/dynamic/stdx/libstdx.syntaxFFI.a
 link_files cangjie/lib/linux_${ARCH}_cjnative cangjie/stdx/linux_${ARCH}_cjnative/static/stdx/*.a
