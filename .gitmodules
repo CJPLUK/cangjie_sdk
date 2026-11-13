@@ -9,27 +9,27 @@
 	url = https://github.com/CJPLUK/cangjie_runtime.git
 [submodule "cangjie_tools"]
 	path = cangjie_tools
-	url = https://gitcode.com/Cangjie/cangjie_tools.git
+	url = https://github.com/cangjielanguage/cangjie_tools.git
 [submodule "third_party/third_party_flatbuffers"]
 	path = third_party/third_party_flatbuffers
-	url = https://gitcode.com/openharmony/third_party_flatbuffers.git
+	url = https://github.com/openharmony/third_party_flatbuffers.git
 	branch = master
 [submodule "third_party/llvm-project"]
 	path = third_party/llvm-project
-	url = https://gitcode.com/Cangjie/llvm-project.git
+	url = https://github.com/cangjielanguage/llvm-project.git
 	branch = main
 [submodule "third_party/third_party_bounds_checking_function"]
 	path = third_party/third_party_bounds_checking_function
-	url = https://gitcode.com/openharmony/third_party_bounds_checking_function.git
+	url = https://github.com/openharmony/third_party_bounds_checking_function.git
 [submodule "third_party/json"]
 	path = third_party/json
-	url = https://gitcode.com/openharmony/third_party_json.git
+	url = https://github.com/openharmony/third_party_json.git
 [submodule "third_party/sqlite3"]
 	path = third_party/sqlite3
-	url = https://gitcode.com/openharmony/third_party_sqlite.git
+	url = https://github.com/openharmony/third_party_sqlite.git
 [submodule "cangjie_test"]
 	path = cangjie_test
 	url = https://github.com/CJPLUK/cangjie_test.git
 [submodule "cangjie_test_framework"]
 	path = cangjie_test_framework
-	url = https://gitcode.com/Cangjie/cangjie_test_framework.git
+	url = https://github.com/cangjielanguage/cangjie_test_framework.git

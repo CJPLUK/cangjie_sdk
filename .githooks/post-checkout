@@ -1,10 +1,14 @@
 #!/bin/bash
 HOOKDIR=$(dirname "$0")
 
-git submodule status \
-| sed -n -e 's/^\+/WARNING A SUBMODULE WAS ALREADY INITIALISED BUT TO A DIFFERENT COMMIT (consider `git submodule update`): /w/dev/stderr' \
-         -e 's/^-[0-9a-z]\{40\} //p' \
-| xargs -P 8 -n 1 bash $HOOKDIR/init-submod.sh
+# Assumes that original clone has all submodules initialized, and not shallow
+gitcommondir=$(git rev-parse --git-common-dir)
+
+for external in third_party/llvm-project third_party/json third_party/third_party_bounds_checking_function third_party/sqlite3 cangjie_test_framework third_party/third_party_flatbuffers cangjie_tools; do
+  git submodule update --init --reference=$gitcommondir/modules/$external $external
+done
+
+git submodule update --init --recommend-shallow
 
 # Add relevant remotes to the submodules
 
@@ -22,6 +26,7 @@ git -C cangjie_tools remote add gitcode https://gitcode.com/Cangjie/cangjie_tool
 )
 
 
+# Add branches to submodules with repos that we have write permissions to and set upstreams
 if [ "-$3" = "-1" ]; then
   git branch | sed -n 's;\* \([^(].*\);\1;p' | if read branchname; then # (branchnames cannot start with '(')
     for submod in cangjie_compiler cangjie_runtime cangjie_stdx; do
