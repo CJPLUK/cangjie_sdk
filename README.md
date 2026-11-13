@@ -35,8 +35,10 @@ podman-compose run --rm build-sdk
 
 You can start the `dev` service to start a container:
 ```
+podman-compose up dev
+```
 
-Commands can then be run inside with:
+Commands can then open a shell inside (or any other command) with:
 ```
 podman-compose exec dev bash -i
 ```
