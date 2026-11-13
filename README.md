@@ -12,38 +12,31 @@ This repo makes use of git submodules so make sure to `git clone` with the `--re
 With the environment set up as dictated by cangjie_build, you can build the SDK with:
 ```shell
 // linux:
-bash build_scripts/linux/all.sh // observed to work on linux/x64
+bash build_scripts/linux/all.sh
 // mac:
-bash build_scripts/mac/all.sh // observed to work on macos/aarch64
+bash build_scripts/mac/all.sh
 ```
 
 ## Build (containerized)
 
 There are services defined in `compose.yaml` which will build the SDK for different targets. These will appear as a .tar.gz file under the software/cangjie directory. 
 
-### Linux/x86_64
+**docker**
 ```shell
-FIXUID=`id -u` docker-compose run --rm build-sdk-linux64
+FIXUID=`id -u` docker-compose run --rm build-sdk
 ```
 
-### Linux/aarch64
+**podman**
 ```shell
-FIXUID=`id -u` docker-compose run --rm build-sdk-linuxarm
+podman-compose run --rm build-sdk
 ```
 
-## Containerized unrestricted vibing (opencode)
+## Dev service
 
-Assumes $HOME is /home/$USER (i.e. set up for linux not mac).
-This will use your auth file from your main opencode install (~/.local/share/opencode/auth.json).
-
-```shell
-FIXUID=`id -u` docker compose run opencode-linux64
+You can start the `dev` service to start a container:
 ```
 
-### Others
-TODO (with cross compilation instructions)
-
-For cross compilation to windows, it appears the docker images have the necessary toolchain already, it may work with the following env var:
-```shell
-MINGW_PATH=/opt/buildtools/llvm-mingw-w64
+Commands can then be run inside with:
+```
+podman-compose exec dev bash -i
 ```
