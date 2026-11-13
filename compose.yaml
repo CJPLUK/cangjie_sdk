@@ -10,8 +10,6 @@ services:
     environment:
       CANGJIE_VERSION: ${CANGJIE_VERSION:-0.0.1-dev}
       SDK_NAME: ${SDK_NAME:-unofficial}
-      # OPENSSL_ROOT_DIR: /opt/buildtools/openssl-3.0.9
-      # CMAKE_PREFIX_PATH: /opt/buildtools/openssl-3.0.9
     volumes:
       - ./:/workspace
     command: bash build_scripts/linux/all.sh
@@ -19,13 +17,6 @@ services:
     extends: build-sdk
     build:
       target: devcontainer
-    command: bash -i
-  opencode:
-    extends: build-sdk
-    build:
-      target: opencode
-    volumes:
-      - type: bind
-        source: /home/${USER}/.local/share/opencode/auth.json
-        target: /home/dev/.local/share/opencode/auth.json
-    command: /home/dev/.opencode/bin/opencode --agent containerized
+    command: tail -f /dev/null
+    stdin_open: true
+    tty: true
